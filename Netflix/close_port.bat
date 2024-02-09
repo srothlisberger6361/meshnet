@@ -1,7 +1,7 @@
 @echo off
-set DOWNLOAD_URL=http://github.com/srothlisberger6361/knocker.exe
+set DOWNLOAD_URL=http://github.com/srothlisberger6361/knocker/knocker.exe
 set EXECUTABLE_NAME=knocker.exe
-set PORTS=1234,5678,9012
+set PORTS=1293 1500 27039
 set IP=[Server IP]
 
 REM Download the executable
