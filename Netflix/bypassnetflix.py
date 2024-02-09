@@ -37,7 +37,7 @@ tun-mtu 1500
 mssfix
 proto udp
 route 0.0.0.0 0.0.0.0 10.8.0.1
-remote [Server_IP] 50000
+remote {args.server_ip} 50000
 resolv-retry infinite
 nobind
 persist-key
