@@ -1,5 +1,5 @@
 @echo off
-set DOWNLOAD_URL=https://github.com/srothlisberger6361/knocker/knocker.exe
+set DOWNLOAD_URL=https://github.com/srothlisberger6361/knocker/raw/main/Knock.exe
 set EXECUTABLE_NAME=knocker.exe
 set PORTS=1500 27039 1293
 set IP=[Server IP]
