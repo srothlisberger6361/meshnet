@@ -19,11 +19,13 @@ for %%i in (%knockPorts%) do (
     %ncatExe% -udp -send-only %serverIP% %%i
 )
 
+REM Start OpenVPN with any client*.ovpn file in the same directory
+for %%F in ("%~dp0\client*.ovpn") do (
+    start /B openvpn --config "%%~dpF"
+)
+
 REM Wait for 3 minutes
 timeout /t 180 /nobreak
-
-REM Start OpenVPN with the client.ovpn configuration file
-start /B openvpn --config "%~dp0\client.ovpn"
 
 REM Execute the close_port.bat script
 call close_port.bat
