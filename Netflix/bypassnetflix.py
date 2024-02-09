@@ -120,7 +120,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration Files"
 
-    body = "Hello! Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Download the txt folder to a local directory, rename it with extension .zip, and extract it. Then double-click on 'open_port.bat' and log into Netflix in your browser within 3 minutes. Your VPN will then disconnect, and you'll use your own network for internet."
+    body = "Hello! Download OpenVPN it if you don't have it already. Download the txt folder to a local directory, rename it with extension .zip, and extract it. Then double-click on 'open_port.bat' and log into Netflix in your browser within 3 minutes. Your VPN will then disconnect, and you'll use your own network for internet."
     message.attach(MIMEText(body, "plain"))
 
     # Create a zip folder
