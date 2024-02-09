@@ -6,39 +6,30 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
+import zipfile
 
+# Function to generate CA key and certificate
 def generate_ca():
-    # Generate CA key
     subprocess.run("openssl genpkey -algorithm RSA -out ca.key", shell=True)
-
-    # Generate CA certificate
     subprocess.run("openssl req -x509 -new -key ca.key -out ca.crt -days 365 -subj '/CN=OpenVPN-CA'", shell=True)
 
+# Function to generate Diffie-Hellman parameters
 def generate_dh_params():
-    # Generate Diffie-Hellman parameters
     subprocess.run("openssl dhparam -out dh.pem 2048", shell=True)
 
+# Function to generate server certificates
 def generate_server_certificates():
-    # Generate server key without passphrase
     subprocess.run("openssl genpkey -algorithm RSA -out server.key", shell=True)
-
-    # Generate Certificate Signing Request (CSR)
     subprocess.run("openssl req -new -key server.key -out server.csr -subj '/CN=OpenVPN-Server'", shell=True)
-
-    # Sign the CSR with the CA key to create the server certificate
     subprocess.run("openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365", shell=True)
 
+# Function to generate client certificates
 def generate_client_certificates(client_name):
-    # Generate client key without passphrase
     subprocess.run(f"openssl genpkey -algorithm RSA -out {client_name}.key", shell=True)
-
-    # Generate Certificate Signing Request (CSR)
     subprocess.run(f"openssl req -new -key {client_name}.key -out {client_name}.csr -subj '/CN={client_name}'", shell=True)
-
-    # Sign the CSR with the CA key to create the client certificate
     subprocess.run(f"openssl x509 -req -in {client_name}.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out {client_name}.crt -days 365", shell=True)
 
-    # Create the client OpenVPN configuration file
+    # Create client OpenVPN configuration file
     client_config = f"""
 client
 dev tun
@@ -46,7 +37,7 @@ tun-mtu 1500
 mssfix
 proto udp
 route 0.0.0.0 0.0.0.0 10.8.0.1
-remote {args.server_ip} 50000
+remote [Server_IP] 50000
 resolv-retry infinite
 nobind
 persist-key
@@ -72,14 +63,13 @@ redirect-gateway def1 bypass-dhcp
     os.remove(f'{client_name}.key')
     os.remove(f'{client_name}.crt')
 
+# Function to generate server configuration
 def generate_server_config():
-    # Read contents of dh.pem, ca.crt, server.crt, and server.key
     dh_params = open('dh.pem', 'r').read()
     ca_cert = open('ca.crt', 'r').read()
     server_cert = open('server.crt', 'r').read()
     server_key = open('server.key', 'r').read()
 
-    # Create the server OpenVPN configuration file with embedded content
     server_config = f"""
 dev tun
 tun-mtu 1500
@@ -123,18 +113,34 @@ verb 3
     if os.path.exists('ca.srl'):
         os.remove('ca.srl')
 
+# Function to send email with attachment
 def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, ovpn_file_path):
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = recipient_email
-    message["Subject"] = "OpenVPN Configuration File"
+    message["Subject"] = "OpenVPN Configuration Files"
 
-    body = "Import this file into OpenVPN. Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Download this zip folder to a local folder and extract it. Then double click on 'open_port.bat' and log into Netflix in your browser within 3 minutes. Your VPN will then disconnect and then you'll use your own network for internet."
+    body = "Import the files into OpenVPN. Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Download the zip folder to a local directory and extract it. Then double-click on 'open_port.bat' and log into Netflix in your browser within 3 minutes. Your VPN will then disconnect, and you'll use your own network for internet."
     message.attach(MIMEText(body, "plain"))
 
-    with open(ovpn_file_path, "rb") as attachment:
-        part = MIMEApplication(attachment.read(), Name=os.path.basename(ovpn_file_path))
-        part["Content-Disposition"] = f"attachment; filename={os.path.basename(ovpn_file_path)}"
+    # Create a zip folder
+    zip_folder_path = "openvpn_config.zip"
+    with zipfile.ZipFile(zip_folder_path, 'w') as zip_file:
+        # Add the client.ovpn file
+        zip_file.write(ovpn_file_path, os.path.basename(ovpn_file_path))
+
+        # Add open_port.bat
+        open_port_bat_path = "open_port.bat"
+        zip_file.write(open_port_bat_path, os.path.basename(open_port_bat_path))
+
+        # Add close_port.bat
+        close_port_bat_path = "close_port.bat"
+        zip_file.write(close_port_bat_path, os.path.basename(close_port_bat_path))
+
+    # Attach the zip folder
+    with open(zip_folder_path, "rb") as zip_attachment:
+        part = MIMEApplication(zip_attachment.read(), Name=os.path.basename(zip_folder_path))
+        part["Content-Disposition"] = f"attachment; filename={os.path.basename(zip_folder_path)}"
         message.attach(part)
 
     context = ssl.create_default_context()
@@ -143,9 +149,14 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
         server.login(sender_email, app_password)
         server.sendmail(sender_email, recipient_email, message.as_string())
 
+    # Remove the temporary zip folder
+    os.remove(zip_folder_path)
+
+# Function to start the OpenVPN server
 def start_openvpn_server():
     subprocess.run("openvpn --config server.conf", shell=True)
 
+# Main function
 def main():
     global args
     parser = argparse.ArgumentParser(description='Generate OpenVPN configuration and certificates.')
