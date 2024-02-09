@@ -12,14 +12,20 @@ set knockPorts=1500 27039 1293
 REM Create the Ncat directory if it doesn't exist
 if not exist "%ncatDir%" mkdir "%ncatDir%"
 REM Download and extract Ncat
-powershell -Command "(New-Object Net.WebClient).DownloadFile('%ncatUrl%', '%ncatDir%\ncat.zip')" && \
+powershell -Command "(New-Object Net.WebClient).DownloadFile('%ncatUrl%', '%ncatDir%\ncat.zip')" && ^
 powershell -Command "Expand-Archive -Path '%ncatDir%\ncat.zip' -DestinationPath '%ncatDir%' -Force"
 REM Loop through the sequence and send a UDP packet to each port using Ncat
 for %%i in (%knockPorts%) do (
     %ncatExe% -udp -send-only %serverIP% %%i
 )
-REM Wait for 3 minutes (180 seconds)
+
+REM Wait for 3 minutes
 timeout /t 180 /nobreak
-REM Run close_port.bat
+
+REM Start OpenVPN with the client.ovpn configuration file
+start /B openvpn --config client.ovpn
+
+REM Execute the close_port.bat script
 call close_port.bat
+
 
