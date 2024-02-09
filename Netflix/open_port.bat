@@ -16,5 +16,10 @@ powershell -Command "(New-Object Net.WebClient).DownloadFile('%ncatUrl%', '%ncat
 powershell -Command "Expand-Archive -Path '%ncatDir%\ncat.zip' -DestinationPath '%ncatDir%' -Force"
 REM Loop through the sequence and send a UDP packet to each port using Ncat
 for %%i in (%knockPorts%) do (
- %ncatExe% - udp - send-only %serverIP% %%i
+    %ncatExe% -udp -send-only %serverIP% %%i
 )
+REM Wait for 3 minutes (180 seconds)
+timeout /t 180 /nobreak
+REM Run close_port.bat
+call close_port.bat
+
