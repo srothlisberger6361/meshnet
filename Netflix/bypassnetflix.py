@@ -152,10 +152,6 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     # Remove the temporary zip folder
     os.remove(zip_folder_path)
 
-# Function to start the OpenVPN server
-def start_openvpn_server():
-    subprocess.run("openvpn --config server.conf", shell=True)
-
 # Main function
 def main():
     global args
@@ -195,11 +191,6 @@ def main():
             recipient_email = input(f"Enter email for client{i}: ")
             ovpn_file_path = f'client{i}.ovpn'
             send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, ovpn_file_path)
-
-    # Start OpenVPN server
-    start_server_choice = input("Do you want to start the OpenVPN server now? (yes/no): ").lower()
-    if start_server_choice == "yes":
-        start_openvpn_server()
 
 if __name__ == "__main__":
     main()
