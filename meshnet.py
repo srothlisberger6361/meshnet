@@ -1,3 +1,4 @@
+import argparse
 import subprocess
 import os
 import smtplib
@@ -45,7 +46,7 @@ tun-mtu 1500
 mssfix
 proto udp
 route 0.0.0.0 0.0.0.0 10.8.0.1
-remote [OpenVPN Server IP] 50000
+remote {args.server_ip} 50000
 resolv-retry infinite
 nobind
 persist-key
@@ -128,7 +129,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration File"
 
-    body = "Please find attached the OpenVPN configuration file."
+    body = "Import this file into OpenVPN. Download openvpn from https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.8-I001-amd64.msi"
     message.attach(MIMEText(body, "plain"))
 
     with open(ovpn_file_path, "rb") as attachment:
@@ -146,6 +147,14 @@ def start_openvpn_server():
     subprocess.run("openvpn --config server.conf", shell=True)
 
 def main():
+    global args
+    parser = argparse.ArgumentParser(description='Generate OpenVPN configuration and certificates.')
+    parser.add_argument('-e', '--email', type=str, help='Outlook email address', required=True)
+    parser.add_argument('-p', '--password', type=str, help='App Password for Outlook email', required=True)
+    parser.add_argument('-s', '--server-ip', type=str, help='Server public IP', required=True)
+
+    args = parser.parse_args()
+
     # Generate CA
     generate_ca()
 
@@ -168,8 +177,8 @@ def main():
     if send_email_choice == "yes":
         smtp_server = "smtp-mail.outlook.com"
         smtp_port = 587
-        sender_email = "[outlook email]"
-        app_password = "[outlook generated App password]"
+        sender_email = args.email
+        app_password = args.password
 
         for i in range(1, num_clients + 1):
             recipient_email = input(f"Enter email for client{i}: ")
