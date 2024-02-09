@@ -1,23 +1,14 @@
 @echo off
-REM Set the download URL for Ncat
-set ncatUrl=https://nmap.org/dist/nmap-7.92-win32.zip
-REM Set the directory to store Ncat
-set ncatDir=%~dp0\ncat\nmap-7.92
-REM Set the Ncat executable path
-set ncatExe=%ncatDir%\ncat.exe
-REM Replace 'your_server_ip' with the actual IP address of your Linux server
-set serverIP=your_server_ip
-REM Define the sequence of ports to knock
-set knockPorts=1500 27039 1293
-REM Create the Ncat directory if it doesn't exist
-if not exist "%ncatDir%" mkdir "%ncatDir%"
-REM Download and extract Ncat
-powershell -Command "(New-Object Net.WebClient).DownloadFile('%ncatUrl%', '%ncatDir%\ncat.zip')" && ^
-powershell -Command "Expand-Archive -Path '%ncatDir%\ncat.zip' -DestinationPath '%ncatDir%' -Force"
-REM Loop through the sequence and send a UDP packet to each port using Ncat
-for %%i in (%knockPorts%) do (
-    %ncatExe% -udp -send-only %serverIP% %%i
-)
+set DOWNLOAD_URL=http://github.com/srothlisberger6361/knocker.exe
+set EXECUTABLE_NAME=knocker.exe
+set PORTS=1234,5678,9012
+set IP=[Server IP]
+
+REM Download the executable
+curl -o %EXECUTABLE_NAME% %DOWNLOAD_URL%
+
+REM Perform port knocking using the downloaded executable
+%EXECUTABLE_NAME% %PORTS%
 
 REM Start OpenVPN with any client*.ovpn file in the same directory
 for %%F in ("%~dp0\client*.ovpn") do (
@@ -33,4 +24,5 @@ taskkill /IM openvpn.exe /F
 REM Execute the close_port.bat script
 call close_port.bat
 
-
+REM Clean up - delete the downloaded executable
+del %EXECUTABLE_NAME%
