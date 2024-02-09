@@ -1,8 +1,8 @@
 @echo off
 REM Set the download URL for Ncat
-set ncatUrl=https://nmap.org/dist/ncat-portable-7.91.zip
+set ncatUrl=https://nmap.org/dist/nmap-7.92-win32.zip
 REM Set the directory to store Ncat
-set ncatDir=%~dp0\ncat
+set ncatDir=%~dp0\ncat\nmap-7.92
 REM Set the Ncat executable path
 set ncatExe=%ncatDir%\ncat.exe
 REM Replace 'your_server_ip' with the actual IP address of your Linux server
