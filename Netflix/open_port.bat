@@ -23,7 +23,7 @@ REM Wait for 3 minutes
 timeout /t 180 /nobreak
 
 REM Start OpenVPN with the client.ovpn configuration file
-start /B openvpn --config client.ovpn
+start /B openvpn --config "%~dp0\client.ovpn"
 
 REM Execute the close_port.bat script
 call close_port.bat
