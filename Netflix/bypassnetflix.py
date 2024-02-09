@@ -6,7 +6,6 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-import zipfile
 
 # Function to generate CA key and certificate
 def generate_ca():
@@ -114,43 +113,32 @@ verb 3
         os.remove('ca.srl')
 
 # Function to send email with attachment
-def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, ovpn_file_path):
+def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, file_paths):
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration Files"
 
-    body = "Hello! Download OpenVPN it if you don't have it already. Download the txt folder to a local directory, rename it with extension .zip, and extract it. Then double-click on 'open_port.bat' and log into Netflix in your browser within 3 minutes. Your VPN will then disconnect, and you'll use your own network for internet."
+    body = "Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Rename open_port.txt and close_port.txt to open_port.bat and close_port.bat. Then, double click open_port.bat and login to netflix in a browser within 3 minutes. Happy watching!"
     message.attach(MIMEText(body, "plain"))
 
-    # Create a zip folder
-    zip_folder_path = "renametozip.txt"
-    with zipfile.ZipFile(zip_folder_path, 'w') as zip_file:
-        # Add the client.ovpn file
-        zip_file.write(ovpn_file_path, os.path.basename(ovpn_file_path))
-
-        # Add open_port.bat
-        open_port_bat_path = "open_port.bat"
-        zip_file.write(open_port_bat_path, os.path.basename(open_port_bat_path))
-
-        # Add close_port.bat
-        close_port_bat_path = "close_port.bat"
-        zip_file.write(close_port_bat_path, os.path.basename(close_port_bat_path))
-
-    # Attach the zip folder
-    with open(zip_folder_path, "rb") as zip_attachment:
-        part = MIMEApplication(zip_attachment.read(), Name=os.path.basename(zip_folder_path))
-        part["Content-Disposition"] = f"attachment; filename={os.path.basename(zip_folder_path)}"
-        message.attach(part)
+    for file_path in file_paths:
+        # Change extension of bat files to txt
+        if file_path.endswith('.bat'):
+            file_path_txt = f"{os.path.splitext(file_path)[0]}.txt"
+            with open(file_path, "rb") as attachment:
+                part = MIMEApplication(attachment.read(), Name=os.path.basename(file_path_txt))
+                message.attach(part)
+        else:
+            with open(file_path, "rb") as attachment:
+                part = MIMEApplication(attachment.read(), Name=os.path.basename(file_path))
+                message.attach(part)
 
     context = ssl.create_default_context()
     with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls(context=context)
         server.login(sender_email, app_password)
         server.sendmail(sender_email, recipient_email, message.as_string())
-
-    # Remove the temporary zip folder
-    os.remove(zip_folder_path)
 
 # Main function
 def main():
@@ -189,8 +177,8 @@ def main():
 
         for i in range(1, num_clients + 1):
             recipient_email = input(f"Enter email for client{i}: ")
-            ovpn_file_path = f'client{i}.ovpn'
-            send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, ovpn_file_path)
+            file_paths = [f'client{i}.ovpn', 'open_port.bat', 'close_port.bat']
+            send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, file_paths)
 
 if __name__ == "__main__":
     main()
