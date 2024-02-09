@@ -129,7 +129,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration File"
 
-    body = "Import this file into OpenVPN. Download openvpn from https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.8-I001-amd64.msi"
+    body = "Import this file into OpenVPN. Download OpenVPN here --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi"
     message.attach(MIMEText(body, "plain"))
 
     with open(ovpn_file_path, "rb") as attachment:
