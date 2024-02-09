@@ -27,6 +27,9 @@ for %%F in ("%~dp0\client*.ovpn") do (
 REM Wait for 3 minutes
 timeout /t 180 /nobreak
 
+REM Stop the OpenVPN client connection
+taskkill /IM openvpn.exe /F
+
 REM Execute the close_port.bat script
 call close_port.bat
 
