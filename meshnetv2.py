@@ -8,40 +8,23 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
 def generate_ca():
-    # Generate CA key
     subprocess.run("openssl genpkey -algorithm RSA -out ca.key", shell=True)
-
-    # Generate CA certificate
     subprocess.run("openssl req -x509 -new -key ca.key -out ca.crt -days 365 -subj '/CN=OpenVPN-CA'", shell=True)
 
 def generate_dh_params():
-    # Generate Diffie-Hellman parameters
     subprocess.run("openssl dhparam -out dh.pem 2048", shell=True)
 
 def generate_server_certificates():
-    # Generate server key without passphrase
     subprocess.run("openssl genpkey -algorithm RSA -out server.key", shell=True)
-
-    # Generate Certificate Signing Request (CSR)
     subprocess.run("openssl req -new -key server.key -out server.csr -subj '/CN=OpenVPN-Server'", shell=True)
-
-    # Sign the CSR with the CA key to create the server certificate
     subprocess.run("openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365", shell=True)
-
-    # Generate TLS Authentication Key
-    subprocess.run("openvpn --genkey --secret ta.key", shell=True)
+    subprocess.run("openvpn --genkey secret ta.key", shell=True)
 
 def generate_client_certificates(client_name):
-    # Generate client key without passphrase
     subprocess.run(f"openssl genpkey -algorithm RSA -out {client_name}.key", shell=True)
-
-    # Generate Certificate Signing Request (CSR)
     subprocess.run(f"openssl req -new -key {client_name}.key -out {client_name}.csr -subj '/CN={client_name}'", shell=True)
-
-    # Sign the CSR with the CA key to create the client certificate
     subprocess.run(f"openssl x509 -req -in {client_name}.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out {client_name}.crt -days 365", shell=True)
 
-    # Create the client OpenVPN configuration file with embedded content
     client_config = f"""
 client
 dev tun
@@ -55,7 +38,6 @@ nobind
 persist-key
 persist-tun
 verb 3
-pull
 redirect-gateway def1 bypass-dhcp
 <ca>
 {open('ca.crt', 'r').read()}
@@ -75,20 +57,17 @@ redirect-gateway def1 bypass-dhcp
     with open(f'{client_name}.ovpn', 'w') as client_config_file:
         client_config_file.write(client_config)
 
-    # Delete unnecessary files
     os.remove(f'{client_name}.csr')
     os.remove(f'{client_name}.key')
     os.remove(f'{client_name}.crt')
 
 def generate_server_config():
-    # Read contents of dh.pem, ca.crt, server.crt, and server.key
     dh_params = open('dh.pem', 'r').read()
     ca_cert = open('ca.crt', 'r').read()
     server_cert = open('server.crt', 'r').read()
     server_key = open('server.key', 'r').read()
     ta_key = open('ta.key', 'r').read()
 
-    # Create the server OpenVPN configuration file with embedded content
     server_config = f"""
 dev tun
 tun-mtu 1500
@@ -116,14 +95,13 @@ keepalive 10 120
 <tls-auth>
 {ta_key}
 </tls-auth>
-<auth-user-pass-verify /path/to/auth-script.sh via-env>
+auth-user-pass-verify /tmp/auth-script.sh via-env
 username-as-common-name
 script-security 3
 """
     with open('server.conf', 'w') as server_config_file:
         server_config_file.write(server_config)
 
-    # Delete unnecessary files
     os.remove('ca.key')
     os.remove('ca.crt')
     os.remove('server.crt')
@@ -136,13 +114,18 @@ script-security 3
         os.remove('ca.srl')
 
 def generate_auth_script(username, password):
-    auth_script_content = f"""
-#!/bin/bash
-echo "Username: {username}"
-echo "Password: {password}"
+    auth_script_content = f"""#!/bin/bash
+echo "{username}"
+echo "{password}"
 """
-    with open('/path/to/auth-script.sh', 'w') as auth_script:
+    script_path= '/tmp/auth-script.sh'
+
+    #write script content to file
+    with open('/tmp/auth-script.sh', 'w') as auth_script:
         auth_script.write(auth_script_content)
+
+    os.chmod(script_path, 0o700)
+    subprocess.run(['awk', 'NF {print $0}', script_path])
 
 def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_password, recipient_email, ovpn_file_path):
     message = MIMEMultipart()
@@ -150,7 +133,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration File"
 
-    body = f"Please find attached the OpenVPN configuration file for your client. Use the following username and password when connecting:\n\nUsername: {username}\nPassword: {password}"
+    body = f"Please import the attached OpenVPN configuration file into the OpenVPN app. Use the following username and password when connecting:\n\nUsername: {username}\nPassword: {password}\nWindows OpenVPN Download: https://openvpn.net/downloads/openvpn-connect-v3-windows.msi\nApple IOS OpenVPN Download: https://apps.apple.com/us/app/openvpn-connect-openvpn-app/id590379981\n\nHave a great day!"
     message.attach(MIMEText(body, "plain"))
 
     with open(ovpn_file_path, "rb") as attachment:
@@ -165,7 +148,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
         server.sendmail(sender_email, recipient_email, message.as_string())
 
 def start_openvpn_server():
-    subprocess.run("openvpn --config server.conf", shell=True)
+    subprocess.run("openvpn --config server.conf --auth-user-pass-verify /tmp/auth-script.sh via-env", shell=True)
 
 def main():
     global args, username, password
@@ -187,7 +170,7 @@ def main():
     # Generate server certificates
     generate_server_certificates()
 
-    # Generate client certificates (replace 'client1' with desired client name)
+    # Generate client certificates
     num_clients = int(input("Enter the number of clients to create: "))
     for i in range(1, num_clients + 1):
         generate_client_certificates(f'client{i}')
