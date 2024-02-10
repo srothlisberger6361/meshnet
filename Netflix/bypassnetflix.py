@@ -119,7 +119,7 @@ def send_email_with_attachment(smtp_server, smtp_port, sender_email, app_passwor
     message["To"] = recipient_email
     message["Subject"] = "OpenVPN Configuration Files"
 
-    body = "Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Rename open_port.txt and close_port.txt to open_port.bat and close_port.bat. Then, right click on open_port.bat and select "Run as Administrator" and login to netflix in a browser within 3 minutes. Happy watching!"
+    body = "Download OpenVPN here if you don't have it already --> https://openvpn.net/downloads/openvpn-connect-v3-windows.msi. Rename open_port.txt and close_port.txt to open_port.bat and close_port.bat. Then, right click on open_port.bat and select 'Run as Administrator' and login to netflix in a browser within 3 minutes. Happy watching!"
     message.attach(MIMEText(body, "plain"))
 
     for file_path in file_paths:
