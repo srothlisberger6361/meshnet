@@ -67,7 +67,6 @@ redirect-gateway def1 bypass-dhcp
 {open(f'{client_name}.key', 'r').read()}
 </key>
 <auth-user-pass>
-auth.txt
 </auth-user-pass>
 <tls-auth>
 {open('ta.key', 'r').read()}
@@ -75,11 +74,6 @@ auth.txt
 """
     with open(f'{client_name}.ovpn', 'w') as client_config_file:
         client_config_file.write(client_config)
-
-    # Create the authentication file
-    auth_file_content = f"{username}\n{password}"
-    with open('auth.txt', 'w') as auth_file:
-        auth_file.write(auth_file_content)
 
     # Delete unnecessary files
     os.remove(f'{client_name}.csr')
